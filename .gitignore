@@ -1,0 +1,21 @@
+/build/
+*.o
+*.out
+*.a
+*.so
+*.exe
+*.dll
+
+# CMake файлы
+/CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+
+# Файлы IDE (например, CLion, Visual Studio)
+.idea/
+*.vs
+*.code-workspace
+
+# macOS системные файлы
+.DS_Store
