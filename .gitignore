@@ -6,6 +6,9 @@
 *.exe
 *.dll
 
+/.vscode/
+*.json
+
 # CMake файлы
 /CMakeFiles/
 CMakeCache.txt
