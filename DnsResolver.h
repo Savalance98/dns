@@ -18,6 +18,7 @@ public:
     DnsResolver(const std::string& dbname, const std::string& user, const std::string& host, int port);
 
     void handleRequest(http::request<http::string_body>& request, tcp::socket& socket);
+    void run();
 
 private:
     pqxx::connection conn_;

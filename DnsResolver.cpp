@@ -4,6 +4,27 @@
 DnsResolver::DnsResolver(const std::string& dbname, const std::string& user, const std::string& host, int port)
     : conn_("dbname=" + dbname + " user=" + user + " host=" + host + " port=" + std::to_string(port)) {}
 
+
+// Метод run
+void DnsResolver::run() {
+    boost::asio::io_context io_context;
+    tcp::acceptor acceptor(io_context, {tcp::v4(), 8080});
+
+    while (true) {
+        tcp::socket socket(io_context);
+        acceptor.accept(socket);
+
+        boost::beast::flat_buffer buffer;
+        http::request<http::string_body> request;
+        boost::beast::http::read(socket, buffer, request);
+
+        handleRequest(request, socket);
+
+        socket.shutdown(tcp::socket::shutdown_send);
+    }
+}
+
+
 // Обработка HTTP-запроса
 void DnsResolver::handleRequest(http::request<http::string_body>& request, tcp::socket& socket) {
     boost::json::object dict;
@@ -16,12 +37,8 @@ void DnsResolver::handleRequest(http::request<http::string_body>& request, tcp::
         if (obj.contains("ip") && obj["ip"].is_array()) {
             auto ip_list = boost::json::value_to<std::vector<std::string>>(obj["ip"]);
             for (const auto& ip : ip_list) {
-                if (does_ip_hostname_exist(txn, ip, "ip")) {
-                    auto hostname = get_by_ip_host(txn, ip, dict, "ip");
-                    if (hostname) {
-                        std::cout << "HOSTNAME: " << *hostname << std::endl;
-                    }
-                } else {
+                auto hostname = get_by_ip_host(txn, ip, dict, "ip");
+                if (!hostname) {
                     std::string hostname = "ya.ru";
                     insert_ip_hostname(txn, ip, hostname);
                 }
@@ -29,17 +46,13 @@ void DnsResolver::handleRequest(http::request<http::string_body>& request, tcp::
         } else if (obj.contains("hostname") && obj["hostname"].is_array()) {
             auto hostname_list = boost::json::value_to<std::vector<std::string>>(obj["hostname"]);
             for (const auto& host : hostname_list) {
-                if (does_ip_hostname_exist(txn, host, "hostname")) {
-                    auto ip = get_by_ip_host(txn, host, dict, "hostname");
-                    if (ip) {
-                        std::cout << "IP: " << *ip << std::endl;
-                    }
-                } else {
+                auto ip = get_by_ip_host(txn, host, dict, "hostname");
+                if (!ip) {
                     std::string ip = "125.0.90.1";
                     insert_ip_hostname(txn, ip, host);
                 }
+                }
             }
-        }
     } else {
         std::cerr << "Ошибка: JSON не является объектом." << std::endl;
     }
